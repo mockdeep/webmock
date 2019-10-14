@@ -120,6 +120,37 @@ shared_context "allowing and disabling net connect" do |*adapter_info|
         end
       end
 
+      describe "allowing by host witout port" do
+        before :each do
+          WebMock.disable_net_connect!(allow: 'http://httpstat.us/200')
+        end
+
+        context "when the host is not allowed" do
+          it "should return stubbed response if request was stubbed" do
+            stub_request(:get, 'disallowed.example.com/foo').to_return(body: "abc")
+            expect(http_request(:get, 'http://disallowed.example.com:80/foo').body).to eq("abc")
+          end
+
+          it "should raise exception if request was not stubbed" do
+            expect {
+              http_request(:get, 'http://disallowed.example.com:80/')
+            }.to raise_error(WebMock::NetConnectNotAllowedError, %r(Real HTTP connections are disabled. Unregistered request: GET http://disallowed.example.com))
+          end
+        end
+
+        context "when the host is allowed" do
+          it "should return stubbed response if request was stubbed" do
+            stub_request(:get, 'httpstat.us/200').to_return(body: "abc")
+            expect(http_request(:get, "http://httpstat.us:80/200").body).to eq("abc")
+          end
+
+          # WARNING: this makes a real HTTP request!
+          it "should make a real request to allowed host", net_connect: true do
+            expect(http_request(:get, "http://httpstat.us:80/200").status).to eq('200')
+          end
+        end
+      end
+
       describe "allowing by host:port string" do
         def replace_with_different_port(uri)
           uri.sub(%r{:(\d+)}){|m0, m1| ':' + ($~[1].to_i + 1).to_s }
