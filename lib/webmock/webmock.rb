@@ -77,6 +77,7 @@ module WebMock
       (uri.omit(:port).to_s =~ allowed) != nil && uri.port == uri.default_port
     when String
       allowed == uri.to_s ||
+      allowed == uri.omit(:port).to_s ||
       allowed == uri.host ||
       allowed == "#{uri.host}:#{uri.port}" ||
       allowed == "#{uri.scheme}://#{uri.host}:#{uri.port}" ||
